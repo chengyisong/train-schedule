@@ -1,0 +1,411 @@
+<!DOCTYPE <!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Train Schedule Tracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- <link rel="stylesheet" type="text/css" media="screen" href="main.css" />
+    <script src="main.js"></script> -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+    <link rel="shortcut icon" href="https://t3.ftcdn.net/jpg/01/68/24/86/240_F_168248605_jUw7cWIglL63aARVC4HXL2G8C192mVNM.jpg">
+    <link href="https://fonts.googleapis.com/css?family=Black+Han+Sans" rel="stylesheet">
+    <script src="moment.js"></script>
+    <script src="https://code.jquery.com/jquery.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Anytime is Train Time</h1>
+            <!-- <h3>This Train Schedule is updated EVERY MINUTE. </h3> -->
+            <h3><i class="fas fa-coffee"></i>~ Sit Back & Relax ~ <i class="fas fa-coffee"></i></h3>
+        </header>
+
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-clock"></i>Current Train Schedule
+            </div>
+            <div class="card-body">
+                <table id="timetable">
+                    <tr>
+                        <th>Train Time</th>
+                        <th>Destination</th>
+                        <th>Frequency (min)</th>
+                        <th>Next Arrival</th>
+                        <th>Minutes Away</th>
+                        <th class="btnColumn"></th>
+                        <th class="btnColumn"></th>
+                    </tr>
+
+                </table>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-sm-6">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-train"></i>Add Train
+                    </div>
+                    <div class="card-body">
+                        <p class="formLabel">Train Name</p>
+                        <input id="nameInput" type="text" placeholder="">
+                        <p class="formLabel">Destination</p>
+                        <input id="destinationInput" type="text">
+                        <p class="formLabel">First Train Time TODAY (HHMM - military time. e.g. "1330")</p>
+                        <input id="timeInput" type="number">
+                        <p class="formLabel">Frequency (min)</p>
+                        <input id="frequencyInput"type="number">
+                        <br>
+                        <button type="button" class="btn btn-info" id="submitBtn">Submit</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-sm-6">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-edit"></i>Update Train
+                    </div>
+                    <div class="card-body">
+                        <p class="formLabel">Train Name</p>
+                        <input id="nameUpdate" type="text" placeholder="" disabled>
+                        <p class="formLabel">Destination</p>
+                        <input id="destinationUpdate" type="text" disabled>
+                        <p class="formLabel">First Train Time TODAY (HHMM - military time. e.g. "1330")</p>
+                        <input id="timeUpdate" type="number" disabled>
+                        <p class="formLabel">Frequency (min)</p>
+                        <input id="frequencyUpdate" type="number" disabled>
+                        <br>
+                        <button type="button" class="btn btn-info" id="updateBtnSubmit" disabled>Update</button>
+                    </div>            
+                </div>
+            </div>
+
+        </div>
+        
+    
+    </div>
+</body>
+    
+    <script src="https://www.gstatic.com/firebasejs/5.5.8/firebase.js"></script>
+    <script>
+    // Initialize Firebase
+        var config = {
+            apiKey: "AIzaSyDgetZnrrYQ1t33GsUgjLX6iP4tC0eFG8c",
+            authDomain: "uwclass-d53f2.firebaseapp.com",
+            databaseURL: "https://uwclass-d53f2.firebaseio.com",
+            projectId: "uwclass-d53f2",
+            storageBucket: "uwclass-d53f2.appspot.com",
+            messagingSenderId: "854053248265"
+        };
+        firebase.initializeApp(config);
+
+        let database = firebase.database();
+
+        let trainNumCount = 0;
+
+        $(document).on("click","#submitBtn",function(){
+
+            let name = $("#nameInput").val().trim();
+            let destination = $("#destinationInput").val().trim();
+            let time = $("#timeInput").val().trim();
+            let frequency = parseInt($("#frequencyInput").val().trim());
+                                 
+            // validate time
+            let startH = parseInt(time.substring(0,2));
+            let startM = parseInt(time.substring(2,4));
+            if (startH >= 0 && startH <= 24 && startM >=0 && startM <=60 && time.length === 4) {
+                // validate frequency
+                if (frequency<=0) {
+                alert("Please enter a valid frequency!")
+                }
+                else {
+                    // push new train info into Firebase
+                    database.ref().push({
+                        nameSaved: name,
+                        destinationSaved: destination,
+                        timeSaved: time,
+                        frequencySaved: frequency,
+                        dateAdded: firebase.database.ServerValue.TIMESTAMP,
+                        num: trainNumCount,
+                    })
+                    trainNumCount ++;
+                }
+            }
+
+            else {
+                alert("Please enter a valid miltary time in the format of 'HHMM'!");
+            }             
+            
+             
+        });        
+        
+        database.ref().on("child_added", function(snapshot){
+            console.log("child_added!!!!!!!!");
+            console.log(snapshot);
+            console.log(snapshot.toJSON());
+            let key = snapshot.key;
+            console.log("key is" + key);
+            let name = snapshot.val().nameSaved;
+            let destination = snapshot.val().destinationSaved;
+            let time = snapshot.val().timeSaved;
+                time = moment(time.toString(),"hhmm");
+            let frequency = snapshot.val().frequencySaved;
+            let num = snapshot.val().num;
+            
+            let current = new Date();
+            let currentTime = moment(current)
+            let currentH = moment().hour();
+            let currentM = moment().minute();
+            
+            let next = time.format("hh:mm A");
+            let minAway = time.diff(current,"minutes");
+            console.log (minAway);
+
+            if (minAway < 0) {
+                minAway = frequency + (minAway % frequency);
+                console.log (minAway);
+                next = currentTime.add(minAway, "minutes").format("hh:mm A")
+            }
+
+            $("#timetable").append("<tr><td>" + name + "</td><td>" +destination + "</td><td>" + frequency + "</td><td>" + next + "</td><td>" + minAway + "</td><td><button class = 'updateBtn' id = 'update" + num + "'>Update</button></td><td><button class = 'deleteBtn' id='delete" + num + "'>Delete</button>" + "</td></tr>");
+
+            $("#update"+num).attr("data-num", key);
+            $("#delete"+num).attr("data-num", key);
+
+        })   
+        
+
+
+
+        $(document).on("click",".deleteBtn", function(){
+            var key = $(this).attr("data-num");
+            console.log(key);
+            database.ref().child(key).remove();
+            $(this).closest('tr').remove();
+            
+        })
+
+
+        // function refreshTable() {
+        //     console.log("refreshed!!!");
+        //     console.log(database.ref());
+        //     $("#timetable").empty();
+        //     $("#timetable").append("<tr><th>Train Time</th><th>Destination</th><th>Frequency (min)</th><th>Next Arrival</th><th>Minutes Away</th><th class='btnColumn'></th><th class='btnColumn'</th></tr>");
+
+        //     database.ref().on("value", function(snapshot) {
+        //         snapshot.forEach(function(childSnapshot) {
+        //             console.log("for each child....");
+        //             var childData = childSnapshot.val();
+                
+        //             let key = childSnapshot.key;
+        //             let name = childData.nameSaved;
+        //             let destination = childData.destinationSaved;
+        //             let time = childData.timeSaved;
+        //                 time = moment(time.toString(),"hhmm");
+        //             let frequency = childData.frequencySaved;
+        //             let num = childData.num;
+                    
+        //             let current = new Date();
+        //             let currentTime = moment(current)
+        //             let currentH = moment().hour();
+        //             let currentM = moment().minute();
+                    
+        //             let next = time.format("hh:mm A");
+        //             let minAway = time.diff(current,"minutes");
+        //             console.log (minAway);
+
+        //             if (minAway < 0) {
+        //                 minAway = frequency + (minAway % frequency);
+        //                 console.log (minAway);
+        //                 next = currentTime.add(minAway, "minutes").format("hh:mm A")
+        //             }
+
+        //             $("#timetable").append("<tr><td>" + name + "</td><td>" +destination + "</td><td>" + frequency + "</td><td>" + next + "</td><td>" + minAway + "</td><td><button class = 'updateBtn' id = 'update" + num + "'>Update</button></td><td><button class = 'deleteBtn' id='delete" + num + "'>Delete</button>" + "</td></tr>");
+                    
+        //             $("#update"+num).attr("data-num", key);
+        //             $("#delete"+num).attr("data-num", key);
+        //         })
+        //     })
+        // }
+
+
+        // Update Button (in the table) - onclick event....
+        $(document).on("click",".updateBtn", function(){
+            var key = $(this).attr("data-num");
+            console.log(key);
+            var $row = $(this).closest('tr')
+            
+            console.log(database.ref().child(key));
+
+            database.ref().on("value", function(snapshot) {
+
+                var nameToBeUpdated = snapshot.child(key).val().nameSaved;
+                var destinationToBeUpdated = snapshot.child(key).val().destinationSaved;
+                var timeToBeUpdated = snapshot.child(key).val().timeSaved;
+                var frequencyToBeUpdated = snapshot.child(key).val().frequencySaved;
+
+                console.log(nameToBeUpdated);
+                $("#nameUpdate").attr("disabled", false);
+                $("#destinationUpdate").attr("disabled", false);
+                $("#timeUpdate").attr("disabled", false);
+                $("#frequencyUpdate").attr("disabled", false);
+                $("#updateBtnSubmit").attr("disabled", false);
+
+                $("#nameUpdate").val(nameToBeUpdated);
+                $("#destinationUpdate").val(destinationToBeUpdated);
+                $("#timeUpdate").val(timeToBeUpdated);
+                $("#frequencyUpdate").val(frequencyToBeUpdated);
+
+                snapshot.forEach(function(childSnapshot) {
+                var childData = childSnapshot.val();
+                })
+            })
+            
+            // Update Button (on bottom right) after filling in all updated info - onclick event....
+            $(document).on("click","#updateBtnSubmit", function() {
+                let numNew = $(this).attr("id").substring(6);
+                let nameNew = $("#nameUpdate").val().trim();
+                let destinationNew = $("#destinationUpdate").val().trim();
+                let timeNewString = $("#timeUpdate").val().trim();
+                let timeNew = moment(timeNewString.toString(),"hhmm");
+                let frequencyNew = parseInt($("#frequencyUpdate").val().trim());
+
+                let current = new Date();
+                let currentTime = moment(current)
+                let currentH = moment().hour();
+                let currentM = moment().minute();
+
+                let nextNew = timeNew.format("hh:mm A");
+                let minAwayNew = timeNew.diff(current,"minutes");
+                console.log (minAwayNew);
+
+                if (minAwayNew < 0) {
+                    minAwayNew = frequencyNew + (minAwayNew % frequencyNew);
+                    console.log (minAwayNew);
+                    nextNew = currentTime.add(minAwayNew, "minutes").format("hh:mm A")
+                }        
+
+                // validate time
+                let startH = parseInt(timeNewString.substring(0,2));
+                let startM = parseInt(timeNewString.substring(2,4));
+                if (startH >= 0 && startH <= 24 && startM >=0 && startM <=60 && timeNewString.length === 4) {
+                    // validate frequency
+                    if (frequencyNew<=0) {
+                    alert("Please enter a valid frequency!")
+                    }
+                    else {
+                        // push new train info into Firebase
+                        console.log("key is...." + key);
+                        console.log(timeNew);
+                        database.ref().child(key).update({
+                            nameSaved: nameNew,
+                            destinationSaved: destinationNew,
+                            timeSaved: timeNewString,
+                            frequencySaved: frequencyNew,
+                        })
+
+                        var newRow = $("<tr><td>" + nameNew + "</td><td>" +destinationNew + "</td><td>" + frequencyNew + "</td><td>" + nextNew + "</td><td>" + minAwayNew + "</td><td><button class = 'updateBtn' id = 'update" + numNew + "'>Update</button></td><td><button class = 'deleteBtn' id='delete" + numNew + "'>Delete</button>" + "</td></tr>");
+
+                        $row.replaceWith($(newRow))
+
+                        // refreshTable();
+                    }
+                }
+
+                else {
+                    alert("Please enter a valid miltary time in the format of 'HHMM'!");
+                }                   
+            })
+
+        })
+
+        // setInterval (refreshTable,6000)
+
+
+    </script>
+
+    <style>
+        header{
+            background-color: rgb(110, 60, 31);
+            color: white;
+            text-align: center;
+            padding-top: 40px;
+            padding-bottom: 40px;
+            margin-top: 5px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            font-family: 'Black Han Sans', sans-serif;
+        }
+
+        h3 {
+            font-size: 23px;
+        }
+
+        .card {
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            margin-top: 20px
+        }
+
+        .formLabel {
+            margin-top: 10px;
+            margin-bottom: 0px;
+        }
+
+        input {
+            width: 100%;
+            border-radius: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .card-header {
+            font-weight: bold;
+            background-color: rgb(74, 151, 223);
+            color: white;
+            padding-top: 5px;
+            padding-bottom: 5px;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        
+        tr:hover {
+            background-color:#f5f5f5;
+        }
+
+        i {
+            margin-right: 15px;
+        }
+
+        .btnColumn{
+            width:90px;
+        }
+
+        .updateBtn {
+            background-color: rgb(247, 223, 147)
+        }
+
+        .deleteBtn {
+            background-color: darkgray;
+        }
+
+    </style>
+</html>
